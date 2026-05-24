@@ -1,5 +1,5 @@
 # ==============================================================================
-# 🏛️ HONG KONG GEOPOLITICAL REFERENDUM SIMULATOR: PRC/CCP FRAMEWORK (STRICT v20.5)
+# 🏛️ HONG KONG GEOPOLITICAL REFERENDUM SIMULATOR: PRC/CCP FRAMEWORK (FIXED v20.6)
 # ==============================================================================
 import streamlit as st
 import pandas as pd
@@ -7,24 +7,23 @@ import numpy as np
 import plotly.graph_objects as go
 
 # 1. 網頁全螢幕與架構配置
-st.set_page_config(layout="wide", page_title="香港主權與PRC/CCP體制公投模擬系統 v20.5", page_icon="🌐")
-st.title("🏛️ 香港地緣主權民意公投模擬與戰略兵棋推演系統 (v20.5)")
+st.set_page_config(layout="wide", page_title="香港主權與PRC/CCP體制公投模擬系統 v20.6", page_icon="🌐")
+st.title("🏛️ 香港地緣主權民意公投模擬與戰略兵棋推演系統 (v20.6)")
 st.subheader("📊 雙軌獨立意向追蹤：大英框架意向 (Option 1) vs 中華人民共和國/CCP 體制意向 (Option 2)")
 st.markdown("---")
 
-# 2. 核心大數據資料庫（長度嚴格對齊香港 18 區）
+# 2. 核心大數據資料庫（【終極修復】嚴格填入香港 18 區真實常住人口，絕不留空）
 raw_referendum_matrix = {
     "District": ["中西區", "灣仔區", "東區", "南區", "油尖旺區", "深水埗區", "九龍城區", "黃大仙區", "觀塘區", "葵青區", "荃灣區", "屯門區", "元朗區", "北區", "大埔區", "沙田區", "西貢區", "離島區"],
-    "Population":,
+    "Population": [235100, 172600, 521200, 263100, 317100, 422000, 418700, 407000, 672000, 484700, 313100, 495000, 650000, 315000, 307000, 691000, 471000, 182000],
     "Base_Opt1_Yes": [0.55, 0.54, 0.44, 0.47, 0.49, 0.42, 0.46, 0.38, 0.35, 0.41, 0.50, 0.45, 0.34, 0.36, 0.51, 0.53, 0.52, 0.32],
-    # Base_Opt2_Yes 代表各行政區對全面轉向 PRC/CCP 體制治理的初始支持度底牌
     "Base_Opt2_Yes": [0.35, 0.36, 0.46, 0.43, 0.41, 0.48, 0.44, 0.52, 0.55, 0.49, 0.40, 0.45, 0.56, 0.54, 0.39, 0.37, 0.38, 0.58],
     "Region": ["香港島", "香港島", "香港島", "香港島", "九龍", "九龍", "九龍", "九龍", "九龍", "新界", "新界", "新界", "新界", "新界", "新界", "新界", "新界", "離島"],
     "Demographics": ["高級中產區", "高級中產區", "基層與閩籍", "中產南區", "商業搖擺區", "基層老區", "舊區與新發展", "傳統公屋區", "大型公屋區", "勞工公屋區", "新市鎮中產", "大西北新區", "圍村鄉事派", "邊境鄉郊區", "科學園科技中產", "全港最大新城", "將軍澳新中產", "離島鄉郊與東涌"]
 }
 df_ref = pd.DataFrame(raw_referendum_matrix)
 
-# 3. 側邊控制面板：全面對齊國際地緣與 PRC/CCP 體制動員變數
+# 3. 側邊控制面板
 st.sidebar.header("🎛️ 選項一：留在英治歷史框架意向")
 uk_sentiment_wave = st.sidebar.slider("🇬🇧 國際地緣風向 / 泛英情感波動 %", -20, 20, 0, step=1)
 middle_class_turnout = st.sidebar.slider("🏙️ 都會中產與知識選民投票率倍數", 0.5, 1.5, 1.0, step=0.05)
@@ -75,7 +74,7 @@ with col1:
         text=(sim_df['Final_Opt1_Yes'] * 100).round(1).astype(str) + "%", textposition='auto'
     ))
     fig_opt1.add_shape(type="line", x0=-0.5, x1=17.5, y0=50, y1=50, line=dict(color="#FF1744", width=2, dash="dash"))
-    fig_opt1.update_layout(template="plotly_dark", title="各行政區 Option 1 同意率 (%)", height=320, yaxis_range=)
+    fig_opt1.update_layout(template="plotly_dark", title="各行政區 Option 1 同意率 (%)", height=320, yaxis_range=[0, 100])
     st.plotly_chart(fig_opt1, use_container_width=True)
 
 with col2:
@@ -89,7 +88,7 @@ with col2:
         text=(sim_df['Final_Opt2_Yes'] * 100).round(1).astype(str) + "%", textposition='auto'
     ))
     fig_opt2.add_shape(type="line", x0=-0.5, x1=17.5, y0=50, y1=50, line=dict(color="#FF1744", width=2, dash="dash"))
-    fig_opt2.update_layout(template="plotly_dark", title="各行政區 Option 2 同意率 (%)", height=320, yaxis_range=)
+    fig_opt2.update_layout(template="plotly_dark", title="各行政區 Option 2 同意率 (%)", height=320, yaxis_range=[0, 100])
     st.plotly_chart(fig_opt2, use_container_width=True)
 
 st.markdown("---")
@@ -113,3 +112,4 @@ with t2:
     st.dataframe(report_df[sim_df['Region'].isin(["香港島", "九龍"])], height=350, use_container_width=True, hide_index=True)
     st.markdown("##### 新界與離島偏鄉區表")
     st.dataframe(report_df[sim_df['Region'].isin(["新界", "離島"])], height=350, use_container_width=True, hide_index=True)
+
