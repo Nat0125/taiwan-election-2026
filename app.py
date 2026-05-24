@@ -1,5 +1,5 @@
 # ==============================================================================
-# 🏛️ TAIWAN ELECTION QUANTITATIVE ENGINE: STAGE 2 INTERACTIVE REAL DATA (v13.0)
+# 🏛️ TAIWAN ELECTION QUANTITATIVE ENGINE: REAL DATA STRICT LOOKUP (v14.0)
 # ==============================================================================
 import streamlit as st
 import pandas as pd
@@ -7,14 +7,14 @@ import numpy as np
 import plotly.graph_objects as go
 
 # 1. 網頁全螢幕配置
-st.set_page_config(layout="wide", page_title="台灣選戰數據中心 v13.0", page_icon="📊")
-st.title("🏛️ 台灣地方大選「藍白聯合陣線」量化模擬與戰略推演系統 (v13.0)")
+st.set_page_config(layout="wide", page_title="台灣選戰數據中心 v14.0", page_icon="📊")
+st.title("🏛️ 台灣地方大選「藍白聯合陣線」量化模擬與戰略推演系統 (v14.0)")
 st.markdown("---")
 
-# 2. 真實參選名單與核心地緣政治數據庫（嚴格對齊 22 縣市）
+# 2. 真實參選名單與核心地緣政治數據庫（嚴格校正 22 縣市數據與長度對齊）
 raw_master_data = {
     "County": ["基隆市", "臺北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣", "臺中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣", "臺南市", "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣"],
-    "Population":,
+    "Population": [360000, 2500000, 4000000, 2300000, 450000, 580000, 530000, 2800000, 1240000, 480000, 660000, 260000, 490000, 1850000, 2730000, 790000, 450000, 320000, 210000, 100000, 140000, 14000],
     "Candidate_DPP": ["童子瑋", "沈伯洋", "蘇巧慧", "黃世杰", "—", "—", "陳品安", "何欣純", "陳素月", "溫世政", "劉建國", "—", "蔡易餘", "陳亭妃", "賴瑞隆", "周春米", "林國漳", "—", "陳瑩", "陳光復", "—", "—"],
     "Candidate_KMT": ["謝國樑", "蔣萬安", "李四川", "張善政", "—", "徐欣瑩", "鍾東錦", "江啟臣", "魏平政", "許淑華", "張嘉郡", "—", "—", "謝龍介", "柯志恩", "蘇清泉", "吳宗憲", "游淑貞", "吳秀華", "陳振中", "陳玉珍", "王忠銘"],
     "Candidate_TPP": ["—", "—", "—", "—", "高虹安", "—", "—", "—", "蔡壁如", "—", "—", "張啓楷", "—", "—", "—", "—", "—", "—", "—", "—", "—", "—"],
@@ -23,6 +23,8 @@ raw_master_data = {
     "Base_DPP": [0.36, 0.35, 0.36, 0.34, 0.28, 0.24, 0.24, 0.34, 0.38, 0.34, 0.46, 0.40, 0.52, 0.53, 0.52, 0.49, 0.41, 0.22, 0.21, 0.43, 0.07, 0.03],
     "Base_TPP": [0.16, 0.20, 0.20, 0.24, 0.44, 0.28, 0.26, 0.24, 0.18, 0.18, 0.16, 0.15, 0.16, 0.16, 0.15, 0.16, 0.17, 0.22, 0.22, 0.15, 0.25, 0.22],
     "Tier": ["一級激戰", "六都核心", "六都核心", "六都核心", "一級激戰", "基本盤常勝", "基本盤常勝", "六都核心", "一級激戰", "基本盤常勝", "基本盤常勝", "基本盤常勝", "基本盤常勝", "六都核心", "六都核心", "基本盤常勝", "一級激戰", "基本盤常勝", "基本盤常勝", "一級激戰", "基本盤常勝", "基本盤常勝"],
+    "Is_Six_Metro": [0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+    "Is_Swing_Zone": [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
     "Coalition_Type": ["常規整合", "常規整合", "民調勝出", "常規整合", "完全禮讓", "常規整合", "常規整合", "常規整合", "三黨大戰", "常規整合", "常規整合", "民調勝出", "獨大局", "常規整合", "常規整合", "常規整合", "民調勝出", "綠營禮讓無黨", "常規整合", "三方混戰", "常規整合", "常規整合"]
 }
 df_master = pd.DataFrame(raw_master_data)
@@ -65,7 +67,7 @@ calc_seats = sim_df.groupby('Winner').size().reindex(party_pro_colors.keys(), fi
 calc_pops = sim_df.groupby('Winner')['Population'].sum().reindex(party_pro_colors.keys(), fill_value=0)
 
 # ==============================================================================
-# 🏙️ 網頁結構：左右對分 (左側為量化大數據看板，右側為 RWD 使用者友善分頁表)
+# 🏙️ 網頁結構：左右對分
 # ==============================================================================
 col1, col2 = st.columns([0.42, 0.58])
 
@@ -82,7 +84,7 @@ with col1:
         textposition='auto'
     ))
     fig_seats.add_shape(type="line", x0=-0.5, x1=1.5, y0=12, y1=12, line=dict(color="#FF1744", width=3, dash="dash"))
-    fig_seats.update_layout(template="plotly_dark", title="預估執政縣市總席次對決 (勝選過半線: 12 席)", height=240, margin=dict(l=10, r=10, t=40, b=10))
+    fig_seats.update_layout(template="plotly_dark", title="預估執市總席次對決 (勝選過半線: 12 席)", height=240, margin=dict(l=10, r=10, t=40, b=10))
     st.plotly_chart(fig_seats, use_container_width=True)
     
     # 指標二：地方執政覆蓋全台總人口比例圓餅圖
@@ -107,7 +109,6 @@ with col1:
 with col2:
     st.subheader("📋 22 縣市真實人選對決與估算報表")
     
-    # 建立一個整合了真實人選與即時估算民調的 DataFrame
     report_df = pd.DataFrame({
         "縣市區域": sim_df['County'],
         "選情級別": sim_df['Tier'],
@@ -121,7 +122,6 @@ with col2:
         "綠營得票率": (sim_df['Final_DPP'] * 100).round(1).astype(str) + "%"
     })
     
-    # 使用 Streamlit 高級 Tabs 元件進行分流排版，達到極致的使用者友善（User-friendly）體驗
     tab1, tab2, tab3, tab4 = st.tabs(["🔥 全台總覽", "🏙️ 六都核心焦點", "⚡ 一級激戰區", "🌲 基本盤常勝軍"])
     
     with tab1:
@@ -132,3 +132,4 @@ with col2:
         st.dataframe(report_df[report_df['選情級別'] == "一級激戰"], height=700, use_container_width=True, hide_index=True)
     with tab4:
         st.dataframe(report_df[report_df['選情級別'] == "基本盤常勝"], height=700, use_container_width=True, hide_index=True)
+
