@@ -1,14 +1,16 @@
 # ==============================================================================
-# 🏛️ TAIWAN ELECTION QUANTITATIVE WAR-ROOM ENGINE (STREAMLIT FIX v5.1)
+# 🏛️ TAIWAN ELECTION QUANTITATIVE WAR-ROOM ENGINE (STREAMLIT FIX v5.2)
 # ==============================================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+# 【關鍵修正】補上漏掉的 subplots 引用包，徹底解決 NameError
+from plotly.subplots import make_subplots
 
 # 1. 強制設定全螢幕 RWD 網頁排版
-st.set_page_config(layout="wide", page_title="台灣選戰量化模擬中心 v5.1", page_icon="🏛️")
-st.title("🏛️ 台灣地方公職選舉量化模擬與戰略預測系統 (旗艦完全體 v5.1)")
+st.set_page_config(layout="wide", page_title="台灣選戰量化模擬中心 v5.2", page_icon="🏛️")
+st.title("🏛️ 台灣地方公職選舉量化模擬與戰略預測系統 (旗艦完全體 v5.2)")
 st.markdown("---")
 
 # 2. 核心大數據基本盤資料庫
@@ -78,13 +80,12 @@ calc_seats = sim_df.groupby('Winner').size().reindex(party_pro_colors.keys(), fi
 calc_pops = sim_df.groupby('Winner')['Population'].sum().reindex(party_pro_colors.keys(), fill_value=0)
 
 # ==============================================================================
-# 🏙️ 專業排版：利用 Streamlit st.columns 強制左右分割，100% 破除加載死鎖 Bug
+# 🏙️ 專業排版：利用 Streamlit st.columns 強制左右分割
 # ==============================================================================
 col1, col2 = st.columns([0.5, 0.5])
 
 with col1:
     st.subheader("🗺️ 全台 22 縣市實體幾何模擬版權圖")
-    # 【終極修正】使用獨立的 Figure 物件渲染 Choropleth，完全脫離 Subplots 的底圖鎖定問題
     hover_labels = sim_df.apply(lambda r: f"<b>🏛️ {r['County']}</b><br>----------------------------<br>🗳️ 勝出: {r['Winner']}<br>🔵 國民黨: {r['Final_KMT']*100:.1f}%<br>🟢 民進黨: {r['Final_DPP']*100:.1f}%<br>⚪ 民眾黨: {r['Final_TPP']*100:.1f}%", axis=1)
     
     fig_map = go.Figure(data=go.Choropleth(
