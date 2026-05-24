@@ -1,13 +1,17 @@
+# ==============================================================================
+# 🏛️ TAIWAN ELECTION QUANTITATIVE WAR-ROOM ENGINE (STREAMLIT FIX v5.1)
+# ==============================================================================
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-st.set_page_config(layout="wide", page_title="台灣選戰量化模擬中心 v5.0", page_icon="🏛️")
-st.title("🏛️ 台灣地方公職選舉量化模擬與戰略預測系統 (旗艦完全體 v5.0)")
+# 1. 強制設定全螢幕 RWD 網頁排版
+st.set_page_config(layout="wide", page_title="台灣選戰量化模擬中心 v5.1", page_icon="🏛️")
+st.title("🏛️ 台灣地方公職選舉量化模擬與戰略預測系統 (旗艦完全體 v5.1)")
 st.markdown("---")
 
+# 2. 核心大數據基本盤資料庫
 raw_master_data = {
     "County": ["基隆市", "臺北市", "新北市", "桃園市", "新竹市", "新竹縣", "苗栗縣", "臺中市", "彰化縣", "南投縣", "雲林縣", "嘉義市", "嘉義縣", "臺南市", "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣"],
     "Population": [360000, 2500000, 4000000, 2300000, 450000, 580000, 530000, 2800000, 1240000, 480000, 660000, 260000, 490000, 1850000, 2730000, 790000, 450000, 320000, 210000, 100000, 140000, 14000],
@@ -20,6 +24,7 @@ raw_master_data = {
 df_master = pd.DataFrame(raw_master_data)
 df_master['Seats'] = 1
 
+# 3. 內嵌全台 22 縣市地理幾何外觀（完美修正投影）
 def generate_inline_geojson():
     geo_centers = {
         "基隆市": [[[121.65,25.10],[121.80,25.10],[121.80,25.18],[121.65,25.18],[121.65,25.10]]], "臺北市": [[[121.48,25.00],[121.62,25.00],[121.62,25.12],[121.48,25.12],[121.48,25.00]]],
@@ -42,6 +47,7 @@ def generate_inline_geojson():
 inline_geojson = generate_inline_geojson()
 party_pro_colors = {"KMT": "#01579B", "DPP": "#2E7D32", "TPP": "#00B8D4", "none": "#455A64"}
 
+# 4. 左側側邊控制面板
 st.sidebar.header("🎛️ 戰情室核心因子控制台")
 kmt_f = st.sidebar.slider("🔵 國民黨大勢增減 %", -20, 20, 0, step=1)
 dpp_f = st.sidebar.slider("🟢 民進黨大勢增減 %", -20, 20, 0, step=1)
@@ -49,6 +55,7 @@ tpp_f = st.sidebar.slider("⚪ 民眾黨棄保/爆發 %", -20, 20, 0, step=1)
 ind_f = st.sidebar.slider("🔸 中間選民流向偏好 %", -15, 15, 0, step=1)
 young_r = st.sidebar.slider("👥 青年投票率加權倍數", 0.3, 1.7, 1.0, step=0.1)
 
+# 多因子量化聯動演算
 sim_df = df_master.copy()
 sim_df['Final_KMT'] = sim_df['Base_KMT'] + (kmt_f / 100.0) + (ind_f * 0.4 / 100.0)
 sim_df['Final_DPP'] = sim_df['Base_DPP'] + (dpp_f / 100.0) + (ind_f * 0.4 / 100.0)
@@ -70,23 +77,49 @@ sim_df['Winner'] = np.select(decisions, ['KMT', 'DPP', 'TPP'], default='none')
 calc_seats = sim_df.groupby('Winner').size().reindex(party_pro_colors.keys(), fill_value=0)
 calc_pops = sim_df.groupby('Winner')['Population'].sum().reindex(party_pro_colors.keys(), fill_value=0)
 
-fig = make_subplots(
-    rows=3, cols=2, column_widths=[0.52, 0.48], row_heights=[0.32, 0.34, 0.34],
-    specs=[[{"type": "choropleth", "rowspan": 3}, {"type": "bar"}], [None, {"type": "pie"}], [None, {"type": "bar"}]],
-    subplot_titles=("🏛️ 全台 22 縣市幾何向量預測版圖", "📊 預估席次總和對決 (過半線: 12 席)", "👥 各黨地方執政覆蓋人口總和比例", "都市 vs 搖擺：六都與關鍵戰區拉鋸戰")
-)
+# ==============================================================================
+# 🏙️ 專業排版：利用 Streamlit st.columns 強制左右分割，100% 破除加載死鎖 Bug
+# ==============================================================================
+col1, col2 = st.columns([0.5, 0.5])
 
-hover_labels = sim_df.apply(lambda r: f"<b>🏛️ {r['County']}</b><br>----------------------------<br>🗳️ 預估勝出: {r['Winner']}<br>🔵 國民黨: {r['Final_KMT']*100:.1f}%<br>🟢 民進黨: {r['Final_DPP']*100:.1f}%<br>⚪ 民眾黨: {r['Final_TPP']*100:.1f}%", axis=1)
-fig.add_trace(go.Choropleth(geojson=inline_geojson, locations=sim_df['County'], featureidkey="properties.COUNTYNAME", z=sim_df['Winner'].map({'KMT': 1, 'DPP': 2, 'TPP': 3, 'none': 0}), colorscale=[[0, '#455A64'], [0.33, '#01579B'], [0.66, '#2E7D32'], [1.0, '#00B8D4']], showscale=False, text=hover_labels, hoverinfo="text"), row=1, col=1)
-fig.add_trace(go.Bar(x=["中國國民黨", "民主進步黨", "台灣民眾黨"], y=[calc_seats['KMT'], calc_seats['DPP'], calc_seats['TPP']], marker_color=[party_pro_colors['KMT'], party_pro_colors['DPP'], party_pro_colors['TPP']], text=[f"<b>{calc_seats['KMT']} 席</b>", f"<b>{calc_seats['DPP']} 席</b>", f"<b>{calc_seats['TPP']} 席</b>"], textposition='auto'), row=1, col=2)
-fig.add_trace(go.Pie(labels=["藍營覆蓋", "綠營覆蓋", "白營覆蓋"], values=[calc_pops['KMT'], calc_pops['DPP'], calc_pops['TPP']], marker=dict(colors=[party_pro_colors['KMT'], party_pro_colors['DPP'], party_pro_colors['TPP']]), hole=0.45, textinfo='percent+label'), row=2, col=2)
+with col1:
+    st.subheader("🗺️ 全台 22 縣市實體幾何模擬版權圖")
+    # 【終極修正】使用獨立的 Figure 物件渲染 Choropleth，完全脫離 Subplots 的底圖鎖定問題
+    hover_labels = sim_df.apply(lambda r: f"<b>🏛️ {r['County']}</b><br>----------------------------<br>🗳️ 勝出: {r['Winner']}<br>🔵 國民黨: {r['Final_KMT']*100:.1f}%<br>🟢 民進黨: {r['Final_DPP']*100:.1f}%<br>⚪ 民眾黨: {r['Final_TPP']*100:.1f}%", axis=1)
+    
+    fig_map = go.Figure(data=go.Choropleth(
+        geojson=inline_geojson,
+        locations=sim_df['County'],
+        featureidkey="properties.COUNTYNAME",
+        z=sim_df['Winner'].map({'KMT': 1, 'DPP': 2, 'TPP': 3, 'none': 0}),
+        colorscale=[[0, '#455A64'], [0.33, '#01579B'], [0.66, '#2E7D32'], [1.0, '#00B8D4']],
+        showscale=False,
+        text=hover_labels,
+        hoverinfo="text"
+    ))
+    fig_map.update_layout(template="plotly_dark", height=750, margin=dict(l=0, r=0, t=10, b=0), geo=dict(projection_type="mercator", fitbounds="locations", visible=False))
+    st.plotly_chart(fig_map, use_container_width=True)
 
-focus_zones = sim_df[(sim_df['Is_Six_Metro'] == 1) | (sim_df['Is_Swing_Zone'] == 1)]
-fig.add_trace(go.Bar(name='國民黨', x=focus_zones['County'], y=focus_zones['Final_KMT']*100, marker_color=party_pro_colors['KMT']), row=3, col=2)
-fig.add_trace(go.Bar(name='民進黨', x=focus_zones['County'], y=focus_zones['Final_DPP']*100, marker_color=party_pro_colors['DPP']), row=3, col=2)
-fig.add_trace(go.Bar(name='民眾黨', x=focus_zones['County'], y=focus_zones['Final_TPP']*100, marker_color=party_pro_colors['TPP']), row=3, col=2)
-
-fig.update_layout(template="plotly_dark", height=820, margin=dict(l=10, r=10, t=50, b=10), barmode='stack', showlegend=False, geo=dict(projection_type="mercator", fitbounds="locations", bgcolor="#121214", showcoastlines=False, showland=False))
-fig.add_shape(type="line", x0=-0.5, x1=2.5, y0=12, y1=12, line=dict(color="#FF1744", width=3, dash="dash"), row=1, col=2)
-
-st.plotly_chart(fig, use_container_width=True)
+with col2:
+    st.subheader("📊 戰情即時量化統計指標")
+    
+    # 建立右側專屬的數據統計三合一聯動圖表
+    fig_stats = make_subplots(
+        rows=3, cols=1, row_heights=[0.3, 0.35, 0.35],
+        subplot_titles=("預估席次總和對決 (紅線過半: 12 席)", "各黨地方執政覆蓋人口總和比例", "都市 vs 搖擺：核心戰區拉鋸戰")
+    )
+    
+    # 席次圖
+    fig_stats.add_trace(go.Bar(x=["中國國民黨", "民主進步黨", "台灣民眾黨"], y=[calc_seats['KMT'], calc_seats['DPP'], calc_seats['TPP']], marker_color=[party_pro_colors['KMT'], party_pro_colors['DPP'], party_pro_colors['TPP']], text=[f"<b>{calc_seats['KMT']} 席</b>", f"<b>{calc_seats['DPP']} 席</b>", f"<b>{calc_seats['TPP']} 席</b>"], textposition='auto'), row=1, col=1)
+    # 人口圖
+    fig_stats.add_trace(go.Pie(labels=["藍營覆蓋", "綠營覆蓋", "白營覆蓋"], values=[calc_pops['KMT'], calc_pops['DPP'], calc_pops['TPP']], marker=dict(colors=[party_pro_colors['KMT'], party_pro_colors['DPP'], party_pro_colors['TPP']]), hole=0.45, textinfo='percent+label'), row=2, col=1)
+    # 戰區拉鋸圖
+    focus_zones = sim_df[(sim_df['Is_Six_Metro'] == 1) | (sim_df['Is_Swing_Zone'] == 1)]
+    fig_stats.add_trace(go.Bar(name='國民黨', x=focus_zones['County'], y=focus_zones['Final_KMT']*100, marker_color=party_pro_colors['KMT']), row=3, col=1)
+    fig_stats.add_trace(go.Bar(name='民進黨', x=focus_zones['County'], y=focus_zones['Final_DPP']*100, marker_color=party_pro_colors['DPP']), row=3, col=1)
+    fig_stats.add_trace(go.Bar(name='民眾黨', x=focus_zones['County'], y=focus_zones['Final_TPP']*100, marker_color=party_pro_colors['TPP']), row=3, col=1)
+    
+    fig_stats.update_layout(template="plotly_dark", height=750, margin=dict(l=10, r=10, t=30, b=10), barmode='stack', showlegend=False)
+    fig_stats.add_shape(type="line", x0=-0.5, x1=2.5, y0=12, y1=12, line=dict(color="#FF1744", width=3, dash="dash"), row=1, col=1)
+    
+    st.plotly_chart(fig_stats, use_container_width=True)
